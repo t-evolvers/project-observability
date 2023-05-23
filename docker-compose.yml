@@ -1,0 +1,64 @@
+version: '3'
+services:
+  demo-otel:
+    build: demo-otel
+    environment:
+      OTEL_SERVICE_NAME: "demo-otel"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://collector:4317"
+      OTEL_LOGS_EXPORTER: "otlp"
+      SERVICE_B_URL: "http://demo-producer:8080"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - collector
+  demo-producer:
+    build: demo-producer
+    environment:
+      OTEL_SERVICE_NAME: "demo-producer"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://collector:4317"
+      OTEL_LOGS_EXPORTER: "otlp"
+    ports:
+      - "8081:8080"
+    depends_on:
+      - collector
+  collector:
+    image: otel/opentelemetry-collector-contrib
+    volumes:
+      - ./otel-collector-config.yml:/etc/otel-collector-config.yml
+    command: [ "--config=/etc/otel-collector-config.yml" ]
+    ports:
+      - "8888:8888"
+      - "8889:8889"
+      - "4317:4317"
+    depends_on:
+      - jaeger
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"
+      - "14268"
+      - "14250:14250"
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - "3100:3100"
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ORG_ROLE=Editor
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+      - GF_USERS_DEFAULT_THEME=dark
+
+

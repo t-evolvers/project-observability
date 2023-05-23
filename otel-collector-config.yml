@@ -1,0 +1,30 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+processors:
+  batch:
+exporters:
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    resource_to_telemetry_conversion:
+      enabled: true
+  jaeger:
+    endpoint: jaeger:14250
+    tls:
+      insecure: true
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push
+  logging:
+    loglevel: debug
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [logging, jaeger]
+    metrics:
+      receivers: [otlp]
+      exporters: [logging, prometheus]
+    logs:
+      receivers: [otlp]
+      exporters: [logging, loki]
